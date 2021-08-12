@@ -8,7 +8,7 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
 
 목차
 * Security config
-* `http.addFilterBefore();`
+* `http.addFilterAfter();`
 * `http.oauth2Login().successHandler();`
 * `http.oauth2Login().failureHandler();`
 * `http.userInfoEndpoint().userService();`
@@ -44,7 +44,7 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
                    .authorizeRequests().antMatchers("/", "/h2-console").permitAll()
                    .antMatchers("/restricted").authenticated();
    
-           http.addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
+           http.addFilterAfter(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
            
            http.oauth2Login()
                    .successHandler(customAuthenticationSuccessHandler)
@@ -60,7 +60,7 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
    로그인 성공 -> `oauth2Login().successHandler`   
    로그인 실패 -> `oauth2Login().failureHandler`   
    회원정보 들어옴 -> `userInfoEndpoint().userService`      
-   요청 특정 위치에 필터 -> `http.addFilterBefore`   
+   요청 들어오면 필터 실행 -> `http.addFilterAfter`   
    와 같이 실행됩니다.   
    <br>
    
@@ -108,10 +108,10 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
 
    그리고    
    ```java
-   http.addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
+   http.addFilterAfter(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
    ```
-   이 코드에서 addFilterBefore 는 security 에서 돌아가는 filter 사이에 어디에다가 넣을것이냐? 를 묻습니다.   
-   그래서 해당 필터는 BasicAuthenticationFilter 이전에 실행됩니다.
+   이 코드에서 addFilterAfter 는 security 에서 돌아가는 filter 사이에 어디에다가 넣을것이냐? 를 묻습니다.   
+   그래서 해당 필터는 BasicAuthenticationFilter 이후에 실행됩니다.
 
    ![](img/securityFilterChain.PNG)   
 
@@ -135,6 +135,6 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
 
    글을 유심히 읽어보시면   
    RememberMeAuthenticationFilter 이후부터 SecurityContext 의 Authentication 객체를 사용합니다.    
-   그럼으로 Authentication 객체가 제대로 사용되기 위해서 그 이전에 jwt 에서 받아 객체를 저장해야 합니다.    
+   그럼으로 Authentication 객체가 제대로 사용되기 위해서 그 이전에 jwt 에서 받아 Authentication 객체를 저장해야 합니다.    
    </details>
    <br>
