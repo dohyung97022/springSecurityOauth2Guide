@@ -138,3 +138,88 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
    그럼으로 Authentication 객체가 제대로 사용되기 위해서 그 이전에 jwt 에서 받아 Authentication 객체를 저장해야 합니다.    
    </details>
    <br>
+
+   <details>
+   <summary>
+   application.yaml
+   </summary>
+   <br>
+
+   Spring security 는 yaml 파일을 설정하는 것 만으로도 oauth2 에 연결 할 수 있습니다.   
+   직접 oauth2 를 연결하신다면   
+
+   ![](img/kakao%20auth%20map.PNG)    
+
+   Rest api 를 통하여 직접 코드, 토큰, 사용자 정보까지 주고 받아야 합니다.   
+   Spring security 는 다음 과정들을 간편하게 yml 파일 설정으로 해결해줍니다.   
+
+   우선 yml 파일을 설정하기 전에 정리를 위해 oauth yml 파일을 분리합니다.   
+
+   application.yml
+
+   ```yaml
+   spring:
+    profiles:
+      include:
+         - oauth
+   ```
+   
+   application.yml 에 다음과 같이 설정하면 application-oauth.yml 파일을 인식하게 됩니다.   
+   <br>
+   
+   application-oauth.yml   
+
+   ```yaml
+   spring:
+    security:
+      oauth2:
+         client:
+            registration:
+               google:
+                  client-id: 
+                  client-secret: 
+                  scope:
+                     - profile
+                     - email
+               facebook:
+                  client-id: {Facebook-ID}
+                  client-secret: {Facebook-Secret}
+                  scope:
+                     - email
+                     - public_profile
+               naver:
+                  client-id: 
+                  client-secret: 
+                  redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+                  authorization-grant-type: authorization_code
+                  scope:
+                     - name
+                     - email
+                     - profile_image
+                  client-name: Naver
+               kakao:
+                  client-id: 
+                  client-secret: 
+                  redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+                  authorization-grant-type: authorization_code
+                  scope:
+                     - profile_nickname
+                     - profile_image
+                  client-name: Kakao
+                  client-authentication-method: POST
+
+            provider:
+               naver:
+                  authorization-uri: https://nid.naver.com/oauth2.0/authorize
+                  token-uri: https://nid.naver.com/oauth2.0/token
+                  user-info-uri: https://openapi.naver.com/v1/nid/me
+                  user-name-attribute: response
+               kakao:
+                  authorization-uri: https://kauth.kakao.com/oauth/authorize
+                  token-uri: https://kauth.kakao.com/oauth/token
+                  user-info-uri: https://kapi.kakao.com/v2/user/me
+                  user-name-attribute: id
+   ```
+   
+   </details>
+   <br>
