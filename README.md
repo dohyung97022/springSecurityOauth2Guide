@@ -8,10 +8,10 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
 
 목차
 * Security config
-* `http.addFilterAfter();`
 * `http.oauth2Login().successHandler();`
 * `http.oauth2Login().failureHandler();`
 * `http.userInfoEndpoint().userService();`
+* `http.addFilterAfter();`
 
 
 ### Security config
@@ -182,11 +182,18 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
                      - profile
                      - email
                facebook:
-                  client-id: {Facebook-ID}
-                  client-secret: {Facebook-Secret}
+                  client-id:
+                  client-secret:
                   scope:
                      - email
                      - public_profile
+               github:
+                  clientId: 
+                  clientSecret: 
+                  redirectUriTemplate: "{baseUrl}/login/oauth2/code/{registrationId}"
+                  scope:
+                     - user:email
+                     - read:user
                naver:
                   client-id: 
                   client-secret: 
@@ -220,6 +227,92 @@ jwt 와 security 에서 제공하는 yml 파일 형식의 인증을 따르고 �
                   user-info-uri: https://kapi.kakao.com/v2/user/me
                   user-name-attribute: id
    ```
+   <br>
+
+   client-id : 클라이언트 아이디    
+   client-secret : 클라이언트 보안번호   
+   provider : 정식 security Oauth2 에 등록되어 있지 않는 네이버와 카카오는 endpoint 들을 지정해야 합니다.   
+   scope : Oauth2 provider 마다 사용자 정보를 제공하는 key 값들이 다른데 여기에서 받을 key 값들을 의미한다.   
+   정식 Oauth2 provider 들은 다음과 같이 Scope 를 생략할 수도 있다.   
+
+   ```yaml
+   spring:
+      security:
+         oauth2:
+            client:
+               registration:
+                  google:
+                     client-id:
+                     client-secret:
+                  facebook:
+                     client-id:
+                     client-secret:
+                  github:
+                     clientId:
+                     clientSecret:
+   ```
+   </details>
+   <br>
+
+### http.oauth2Login().successHandler();
+
+   <details>
+   <summary>
+   CustomAuthenticationSuccessHandler
+   </summary>
+   <br>
    
+   이 클래스는 Oauth2 의 로그인이 성공하면 실행되는 코드를 오버라이딩합니다.   
+   반드시 security config 에서 `http.oauth2Login().successHandler(customAuthenticationSuccessHandler)` 를 해주세요.   
+   ```java
+   /**
+    * @Created by Doe
+    * @Date: 2021/07/30
+    * @ModifiedDate: 2021/08/19
+    */
+   
+   @RequiredArgsConstructor
+   @Component
+   public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+   
+      private static final String JWT_SUBJECT = "user";
+      private static final int JWT_DUE_DAY = 5;
+      private static final String COOKIE_SUBJECT = "jwt";
+      private static final int COOKIE_DUE_DAY = 5;
+   
+      @Value("${spring.frontend.url}")
+      private String FRONTEND_URL;
+      @Value("${spring.frontend.domain}")
+      private String COOKIE_DOMAIN;
+   
+      @Override
+      public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication) throws IOException, ServletException {
+         onAuthenticationSuccess(request, response, authentication);
+         chain.doFilter(request, response);
+      }
+   
+      @Override
+      public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+         OAuth2UserProvider OAuth2UserProvider = (OAuth2UserProvider) authentication.getPrincipal();
+         String jwt = JwtTokenProvider
+                 .generateToken(OAuth2UserProvider.createJWTPayload(), JWT_SUBJECT, TimeUnit.DAYS.toMillis(JWT_DUE_DAY));
+   
+         Cookie cookie = new Cookie(COOKIE_SUBJECT, jwt);
+         cookie.setSecure(true);
+         cookie.setMaxAge((int) TimeUnit.DAYS.toSeconds(COOKIE_DUE_DAY));
+         cookie.setPath("/");
+         cookie.setDomain(COOKIE_DOMAIN);
+         response.addCookie(cookie);
+      }
+   }
+   ```
+
+   `implements AuthenticationSuccessHandler` 된 클래스는 2개의 onAuthenticationSuccess function 을 override 해야 합니다.   
+   이 두개의 function 의 차이는 FilterChain chain 를 인자로 갖고 있는지인데, FilterChain 은 필터들 사이로 request 와 response 를 이동시키는 역활을 합니다.   
+   
+   즉 위의 코드로 response 에 쿠키를 추가하여 다음 필터로 `chain.doFilter(request, response);` 를 통해 보내면, response 의 쿠키에 jwt 가 포함되어 나오게 됩니다.   
+
+   물론 `response.sendRedirect(FRONTEND_URL);` 를 하여 쿠키가 포함된 상태로 프런트로 보낼 수 있지만, 모든 security 의 필터를 거쳐서 
+   security config 의 설정인 `http.oauth2Login().defaultSuccessUrl(FRONTEND_URL);` 로 보내는 것이 프레임워크를 더 잘 활용한 방법이라고 생각합니다.   
    </details>
    <br>
